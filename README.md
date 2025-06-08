@@ -63,9 +63,3 @@ BrushCoreDemoApp/
 ## Project Goal
 
 This mini project was built to explore creative rendering techniques in iOS, particularly for artistic and educational use cases. The goal was to create a clean, reusable foundation for more advanced brush tools and stylus-based drawing experiences all while showcasing the power of modular Swift architecture.
-
----
-
-## License
-
-This project is licensed under the **MIT License**.
