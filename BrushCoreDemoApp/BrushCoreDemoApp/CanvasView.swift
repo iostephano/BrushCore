@@ -44,6 +44,13 @@ final class CanvasView: UIView {
         setNeedsDisplay()
     }
 
+    /// Vacía el lienzo: descarta los trazos guardados y el que se esté pintando.
+    func clear() {
+        strokes.removeAll()
+        currentPoints.removeAll()
+        setNeedsDisplay()
+    }
+
     override func draw(_ rect: CGRect) {
         guard let context = UIGraphicsGetCurrentContext() else { return }
 
