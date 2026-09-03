@@ -4,31 +4,42 @@
 //
 //  Created by Stephano Portella on 24/05/25.
 //
+
 import UIKit
 import BrushCore
 
-class CanvasView: UIView {
+/// Lienzo de dibujo: acumula los trazos terminados y los redibuja todos con
+/// `BrushRenderer` en cada `draw(_:)`. Es una demo, así que no hay límite de
+/// trazos ni cacheo del resultado en un bitmap.
+final class CanvasView: UIView {
+
+    /// Pincel con el que se pintarán los próximos trazos.
+    var brush: Brush = .default
+
+    private let renderer = BrushRenderer()
     private var strokes: [Stroke] = []
     private var currentPoints: [CGPoint] = []
-    private let renderer = BrushRenderer()
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        currentPoints = []
-        if let point = touches.first?.location(in: self) {
-            currentPoints.append(point)
-        }
+        guard let point = touches.first?.location(in: self) else { return }
+        currentPoints = [point]
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if let point = touches.first?.location(in: self) {
-            currentPoints.append(point)
-            setNeedsDisplay()
-        }
+        guard let point = touches.first?.location(in: self) else { return }
+        currentPoints.append(point)
+        setNeedsDisplay()
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        let stroke = Stroke(points: currentPoints, brush: BrushSettings.current)
-        strokes.append(stroke)
+        if currentPoints.count > 1 {
+            strokes.append(Stroke(points: currentPoints, brush: brush))
+        }
+        currentPoints = []
+        setNeedsDisplay()
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         currentPoints = []
         setNeedsDisplay()
     }
@@ -39,11 +50,8 @@ class CanvasView: UIView {
         for stroke in strokes {
             renderer.drawStroke(stroke, in: context)
         }
-
-        if !currentPoints.isEmpty {
-            let previewStroke = Stroke(points: currentPoints, brush: BrushSettings.current)
-            renderer.drawStroke(previewStroke, in: context)
+        if currentPoints.count > 1 {
+            renderer.drawStroke(Stroke(points: currentPoints, brush: brush), in: context)
         }
     }
 }
-

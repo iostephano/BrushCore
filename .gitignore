@@ -1,0 +1,17 @@
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# Xcode
+DerivedData/
+build/
+*.xcresult
+
+# Xcode per-user state — never shared. Shared schemes and the project's own
+# workspace data stay tracked; only per-user data inside any project is ignored.
+*.xcuserstate
+**/xcuserdata/
+
+# macOS
+.DS_Store

@@ -5,9 +5,11 @@
 //  Created by Stephano Portella on 24/05/25.
 //
 
-import UIKit
+import CoreGraphics
 
-public struct Stroke {
+/// Un trazo: la secuencia de puntos que siguió el dedo y el pincel con el que se
+/// pintó.
+public struct Stroke: Sendable, Equatable {
     public var points: [CGPoint]
     public var brush: Brush
 

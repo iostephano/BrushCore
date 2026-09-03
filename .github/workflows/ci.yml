@@ -1,0 +1,88 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# BrushCore — Continuous Integration
+#
+# Triggers : push to main, any pull_request targeting main.
+# Runner   : macos-26  →  ships with Xcode 26.x + iOS 26 SDK.
+# Layout   : a Swift Package (BrushCore) at the repo root, plus a UIKit demo
+#            app (BrushCoreDemoApp) that consumes it as a local package.
+# Steps    : run the package's Swift Testing suite on the host, then build the
+#            demo app for the iOS Simulator (which also compiles the package
+#            for iOS).
+# Deps     : none — pure Apple frameworks, no package resolution needed.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Test package & build demo — iOS
+    runs-on: macos-26
+
+    env:
+      APP_PROJECT: BrushCoreDemoApp/BrushCoreDemoApp.xcodeproj
+      APP_SCHEME:  BrushCoreDemoApp
+
+    steps:
+      # ── 1. Source ───────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Xcode ────────────────────────────────────────────────────────────
+      - name: Select Xcode
+        run: |
+          VERSION=$(tr -d '[:space:]' < .xcode-version)
+          XCODE_PATH="/Applications/Xcode_${VERSION}.app"
+          if [[ ! -d "$XCODE_PATH" ]]; then
+            echo "Error: Xcode ${VERSION} not found at ${XCODE_PATH}" >&2
+            echo "Installed Xcodes:" >&2
+            ls -d /Applications/Xcode*.app >&2
+            exit 1
+          fi
+          sudo xcode-select -s "$XCODE_PATH"
+          echo "Active Xcode: $(xcodebuild -version | tr '\n' ' ')  →  $XCODE_PATH"
+
+      # ── 3. Package tests ───────────────────────────────────────────────────
+      # BrushCore only needs CoreGraphics, so its Swift Testing suite runs on
+      # the host — no simulator required. Swift Testing prints its own count, so
+      # a run that compiled but executed nothing is caught by parsing it.
+      - name: Test — BrushCore package
+        run: |
+          set -o pipefail
+          swift test 2>&1 | tee swift-test.log
+          COUNT=$(grep -oE 'Test run with [0-9]+ test' swift-test.log | grep -oE '[0-9]+' | tail -1 || true)
+          if [[ -z "$COUNT" || "$COUNT" -eq 0 ]]; then
+            echo "::error::No se ejecutó ningún test del paquete BrushCore. Revisa el target BrushCoreTests."
+            exit 1
+          fi
+          echo "✅ $COUNT tests del paquete ejecutados"
+
+      # ── 4. Diagnostics ─────────────────────────────────────────────────────
+      - name: List available simulators
+        run: |
+          xcrun simctl list devices available 2>/dev/null \
+            | grep -E "^--|iPhone|iPad" \
+            || echo "simctl returned no output"
+
+      # ── 5. Demo app build ──────────────────────────────────────────────────
+      # generic/platform compiles without booting a simulator and also builds
+      # BrushCore for iOS, catching Swift 6 strict-concurrency errors there.
+      - name: Build — BrushCoreDemoApp
+        run: |
+          xcodebuild build \
+            -project "$APP_PROJECT" \
+            -scheme  "$APP_SCHEME"  \
+            -configuration Debug \
+            -destination "generic/platform=iOS Simulator" \
+            CODE_SIGNING_ALLOWED=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            -quiet
