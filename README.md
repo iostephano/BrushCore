@@ -8,6 +8,8 @@ como dependencia local para pintar sobre un lienzo con el dedo. Existe como proy
 portafolio para mostrar una librería reutilizable, con su lógica de geometría separada
 y verificada por pruebas, más una app que la consume.
 
+<img width="1390" height="695" alt="BrushCore" src="https://github.com/user-attachments/assets/51d63463-5502-432f-86fe-782692c0d591" />
+
 ---
 
 ## Tecnologías usadas
